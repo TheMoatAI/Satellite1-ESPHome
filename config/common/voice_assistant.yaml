@@ -129,6 +129,10 @@ voice_assistant:
           and:
             - lambda: return !id(init_in_progress);
             - lambda: return code != "duplicate_wake_up_detected";
+            # Farr fork: continuous capture hears noise/fan hum all day and STT
+            # legitimately returns no text — that is normal operation, not a
+            # failure. Only real faults may take the error (red pulse) phase.
+            - lambda: return code != "stt-no-text-recognized";
         then:
           - lambda: id(voice_assistant_phase) = ${voice_assist_error_phase_id};
           - script.execute: control_leds
