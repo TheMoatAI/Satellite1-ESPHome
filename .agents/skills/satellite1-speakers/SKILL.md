@@ -43,8 +43,10 @@ unit is which": read it from HA config entries when in doubt.
 
 ## OTA flashing
 
-The venv lives in the fork repo: `Satellite1-ESPHome/.venv` (esphome 2026.7.3 —
-a fork build; stock FPH firmware reports 2025.4.0).
+The venv lives in the fork repo: `Satellite1-ESPHome/.venv` (esphome 2026.7.3
+from PyPI — stock CLI; the fork's custom pieces arrive via
+`external_components` pinned in `config/common/components.external.yaml`).
+Stock FPH firmware builds report 2025.4.0.
 
 ```sh
 cd /Users/chrisfarr/code/Satellite1-ESPHome
@@ -58,8 +60,9 @@ cd /Users/chrisfarr/code/Satellite1-ESPHome
 - The `esphome run` invocation can outlive a tool-call timeout while still
   having completed fine: check the log for `OTA successful` before retrying.
   Killing mid-upload is safe — the device keeps the old firmware.
-- After a flash, verify the `Free speech capture` switch state in HA
-  (`RESTORE_DEFAULT_OFF`, but HA restores the entity in practice).
+- After a flash, verify the `Free speech capture` switch state in HA — the
+  switch restores from the device's flash prefs (`RESTORE_DEFAULT_OFF`), not
+  from HA, so a fresh flash can drop it.
 - If an edit to an *included* file (`config/common/*`) isn't picked up, delete
   the `.esphome/` cache dir and rebuild — the validation cache can pin stale
   included config.
@@ -76,6 +79,7 @@ cd /Users/chrisfarr/code/Satellite1-ESPHome
 | Solid green | thinking |
 | Solid orange | talking (replying) |
 | **Flashing red** | **error phase** — a pipeline error was accepted as real (e.g. API/pipeline failure). NOT a mute indicator. |
+| **Red Twinkle** | no HA connection / assistant not ready — seen during HA restarts; don't misread as a pipeline error. |
 | Red LEDs at specific positions | mute indicators (mic/speaker muted) |
 
 - `stt-no-text-recognized` is **benign** in continuous capture (fan noise, empty

@@ -48,15 +48,20 @@ customizations.
 ### 3. Error policy — `stt-no-text-recognized` is not an error
 
 - `voice_assistant.yaml on_error` excludes `stt-no-text-recognized` (and
-  `duplicate_wake_up_detected`) from taking the red error phase.
+  `duplicate_wake_up_detected`) from taking the red error phase. The
+  exclusion is global, not continuous-capture-only: in wake-word mode a
+  false wake that yields no text also stays silent instead of flashing red.
+  We consider that correct behavior for this household.
 - Rationale: in continuous capture the mic hears fan noise / empty room all
   day and STT legitimately returns no text. Treating that as an error put the
   ring in a permanent blue→flashing-red error loop (observed 2026-11-10, the
   unit near the AI cluster's cooling fans). Household decision: noise with
   no words is normal operation; do NOT compensate with mic gain / noise
   suppression changes — keep those stock and fix server-side.
-- Real faults (API loss, pipeline failures other than the exclusions) still
-  take the red pulse.
+- Caveat: a dead or dirty mic manifests as exactly `stt-no-text-recognized`,
+  so that hardware-fault class no longer lights red on its own. If a unit
+  stops hearing people, check whisper's VAD/transcription output and the
+  hearing-accuracy harness rather than trusting the ring.
 
 ## Units, configs, and identity mapping
 
