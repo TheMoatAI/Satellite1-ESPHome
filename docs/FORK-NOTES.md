@@ -44,6 +44,11 @@ customizations.
   as "still in conversation".
 - Pulsing was deliberately replaced with solid colors ("a little
   overwhelming").
+- The three color scripts pass `effect: "none"` explicitly: `light.turn_on`
+  without an `effect:` leaves any running effect (e.g. the white volume
+  level display from a recent volume-button press) running forever — the
+  volume indicator only cleared when a restore path ended in
+  `light.turn_off`. Fixed 2026-11-10.
 
 ### 3. Error policy — `stt-no-text-recognized` is not an error
 
@@ -96,6 +101,10 @@ Treat the HA config-entry host mapping as authoritative for unit identity.
 
 ## Change log
 
+- 2026-11-10 (2): Conversation lighting scripts now pass `effect: "none"` —
+  the white volume-level display never cleared after adjusting volume
+  because the restore path turned the light on with a color but kept the
+  previous effect running.
 - 2026-11-10: Added `stt-no-text-recognized` exclusion to `on_error` (stops
   blue→flashing-red error loop in noisy rooms). Added per-room configs
   (kitchen/livingroom), conversation lighting, free-speech capture switch
