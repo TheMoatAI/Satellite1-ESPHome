@@ -68,6 +68,23 @@ customizations.
   stops hearing people, check whisper's VAD/transcription output and the
   hearing-accuracy harness rather than trusting the ring.
 
+### 4. Voice assistant samples mic channel 1 (not stock channel 0)
+
+- `voice_assistant.yaml` microphone block: `channels: 1`, matching the
+  micro_wake_word block (which has always used channel 1 and detected wake
+  words on both units). Stock FPH v0.2.1 ships VA on ch0 / MWW on ch1.
+- Rationale: side-by-side calibration (scripted phrases cross-played between
+  units, transcription scored via the gate's utterance buffer) found the
+  ch0 path near-deaf on **both** units — c2f84c's ch0 transcribed nothing at
+  any volume (even to a human yelling) while its ch1 passes scripted phrases
+  at volume 0.40; c5a9ac's ch0 needed volume 0.60 to pass. The clean
+  same-unit contrast: c2f84c ch0 = nothing, ch1 = 0.40.
+- Calibration data: `HomeAutomation/nocommit/hearing/` (ladder + validation
+  JSON per arm; run via `just voice-hearing-test`).
+- Reflash caveat: stale `config/.esphome/` build dirs can carry the old
+  `add_channel(0)` into a rebuilt image — clear `.esphome/` and verify the
+  generated `main.cpp` shows `add_channel(1)` before OTA.
+
 ## Units, configs, and identity mapping
 
 Two per-room configs exist, keyed to WiFi (not to current physical room):
@@ -86,14 +103,12 @@ Treat the HA config-entry host mapping as authoritative for unit identity.
 
 ## Known issues / open threads
 
-- **c2f84c mic capture quality** (2026-11-10): that unit delivers
-  near-speech-free audio to whisper even when the user yells (VAD drops
-  ~100% of chunks; occasional 1s fragments transcribe as hallucinations).
-  Reboots and firmware re-flash did not change it; the other unit works in
-  the same conditions. Suspect hardware (half-seated Core/Hat or mic
-  connection — units are self-assembled). Next step: power down, reseat,
-  retest; then the scripted hearing-accuracy harness (HomeAutomation) decides
-  if it needs RMA.
+- **c2f84c mic capture quality — RESOLVED as a channel issue** (updated
+  2026-11-11): the earlier "suspect hardware / RMA" theory is superseded —
+  the unit transcribes scripted phrases well on mic channel 1 (minimal
+  passing volume 0.40 in calibration) and channel 0 is near-deaf on both
+  units. Fixed by sampling ch1 for the voice assistant (divergence §4);
+  hardware reseat/RMA no longer indicated unless ch1 degrades too.
 - Transcripts of pure room noise occasionally hallucinate sentences
   containing "Jinx" and open conversations server-side; the gate's echo/dup
   suppression catches exact replays, but noise-hallucination filtering is a
@@ -101,6 +116,11 @@ Treat the HA config-entry host mapping as authoritative for unit identity.
 
 ## Change log
 
+- 2026-11-11: Voice assistant mic channel 0 → 1 (ch0 near-deaf on both
+  units; calibration data in HomeAutomation nocommit/hearing). Mute checks
+  hoisted above the conversation phase handlers in the LED dispatch (mute
+  dots now win over conversation colors; side effect: a muted unit no
+  longer shows the ticking-timer countdown — ringing timers still show).
 - 2026-11-10 (2): Conversation lighting scripts now pass `effect: "none"` —
   the white volume-level display never cleared after adjusting volume
   because the restore path turned the light on with a color but kept the
