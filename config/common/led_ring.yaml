@@ -515,7 +515,7 @@ script:
   # conversation_light switch on for the duration of an active Jinx
   # conversation; while it is on the ring shows solid blue when listening/
   # waiting for the next line, solid green when thinking, solid orange when
-  # talking. Errors stay red.
+  # talking. Errors stay red (unless the unit is muted — mute wins).
   - id: conversation_listening_light
     then:
       - light.turn_on:
