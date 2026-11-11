@@ -524,6 +524,9 @@ script:
           red: 20%
           green: 60%
           blue: 100%
+          # Farr fork: clear any running effect (e.g. the white volume level
+          # display) — turn_on alone leaves the previous effect running.
+          effect: "none"
 
   - id: conversation_thinking_light
     then:
@@ -533,6 +536,7 @@ script:
           red: 0%
           green: 100%
           blue: 10%
+          effect: "none"
 
   # Script executed during Improv BLE
   # Warm White Twinkle
@@ -652,6 +656,7 @@ script:
           red: 100%
           green: 45%
           blue: 0%
+          effect: "none"
 
   # Script executed when the voice assistant is in error
   # Fast Red Pulse
