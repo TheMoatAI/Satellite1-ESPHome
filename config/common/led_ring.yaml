@@ -489,6 +489,10 @@ script:
             id(control_leds_warning).execute();
           } else if (id(timer_ringing).state) {
             id(control_leds_timer_ringing).execute();
+          } else if (id(master_mute_switch).state) {
+            id(control_leds_muted_or_silent).execute();
+          } else if (id(external_media_player).volume == 0.0f || id(external_media_player).is_muted()) {
+            id(control_leds_muted_or_silent).execute();
           } else if (id(voice_assistant_phase) == ${voice_assist_waiting_for_command_phase_id}) {
             id(control_leds_voice_assistant_waiting_for_command_phase).execute();
           } else if (id(voice_assistant_phase) == ${voice_assist_listening_for_command_phase_id}) {
@@ -503,10 +507,6 @@ script:
             id(control_leds_voice_assistant_not_ready_phase).execute();
           } else if (id(is_timer_active)) {
             id(control_leds_timer_ticking).execute();
-          } else if (id(master_mute_switch).state) {
-            id(control_leds_muted_or_silent).execute();
-          } else if (id(external_media_player).volume == 0.0f || id(external_media_player).is_muted()) {
-            id(control_leds_muted_or_silent).execute();
           } else if (id(voice_assistant_phase) == ${voice_assist_idle_phase_id}) {
             id(control_leds_voice_assistant_idle_phase).execute();
           }
@@ -515,7 +515,7 @@ script:
   # conversation_light switch on for the duration of an active Jinx
   # conversation; while it is on the ring shows solid blue when listening/
   # waiting for the next line, solid green when thinking, solid orange when
-  # talking. Errors stay red.
+  # talking. Errors stay red (unless the unit is muted — mute wins).
   - id: conversation_listening_light
     then:
       - light.turn_on:
