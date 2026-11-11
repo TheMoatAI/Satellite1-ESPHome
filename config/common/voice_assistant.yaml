@@ -97,7 +97,7 @@ voice_assistant:
   id: va
   microphone:
     microphone: sat1_mics
-    channels: 0
+    channels: 1
 
   media_player: external_media_player
   micro_wake_word: mww
