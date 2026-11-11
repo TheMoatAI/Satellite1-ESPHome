@@ -3,6 +3,11 @@
 # so the existing Home Assistant device and its entities are unchanged; this
 # only pins the compiled WiFi credentials so a USB reflash lands on the
 # room's network with zero hands-on provisioning.
+substitutions:
+  # c5a9ac's ch1 mic produces VAD-triggering noise but no intelligible speech
+  # (whisper: "No text recognized") — its ch0 passes.
+  mic_channels: "0"
+
 packages:
   satellite1: !include satellite1.yaml
 

@@ -5,6 +5,11 @@ substitutions:
   # set this version by GHA at build time
   esp32_fw_version: dev
 
+  # XMOS mic channel per unit — ch1 tested good on c2f84c; c5a9ac needs ch0
+  # (its ch1 hears VAD but whisper gets no intelligible speech). Override
+  # per-unit yaml; default ch1.
+  mic_channels: "1"
+
 packages:
   # This is an inline package to prefix the on_client_connected with the wait_until action
   # It must appear before the actual package so it becomes the original config and the
