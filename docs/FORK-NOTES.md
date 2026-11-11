@@ -79,11 +79,17 @@ customizations.
   channels are NOT equivalent and differ per unit:
   - **c2f84c: ch0 near-dead, ch1 good** — ch0 transcribed nothing at any
     volume (even to a human yelling); ch1 passes scripted phrases at 0.40.
-  - **c5a9ac: ch1 unusable, ch0 works** — ch0 passed capture at 0.60
-    (2026-11-10 runs); flashed ch1 on 2026-11-11 heard VAD-level noise but
-    whisper returned "No text recognized" on every pipeline cycle (visible
-    in encrypted device logs) — the channel hears sound but no intelligible
-    speech. `satellite1-livingroom.yaml` therefore pins `mic_channels: "0"`.
+  - **c5a9ac: ch1 unusable, ch0 works** — ch0 passed capture at 0.65 (2/3
+    phrases, 2026-11-11 00:01 run; two earlier 2026-11-10 ch0-arm runs died
+    at every volume, likely the stale-config-cache pitfall below — treat
+    0.60 as the working floor until re-laddered); flashed ch1 on 2026-11-11
+    heard VAD-level noise but whisper returned "No text recognized" on every
+    pipeline cycle (visible in encrypted device logs).
+    `satellite1-livingroom.yaml` therefore pins `mic_channels: "0"`.
+- The micro_wake_word microphone block stays on literal `channels: 1` — the
+  only channel with verified wake-word detection on both units (stock
+  behavior). Wake words are dormant in the Farr attention-gate mode; when
+  they re-enable, verify MWW on c5a9ac before trusting ch0 there.
 - Calibration data: `HomeAutomation/nocommit/hearing/` (ladder + validation
   JSON per arm; run via `just voice-hearing-test`).
 - Reflash caveat: stale `config/.esphome/` build dirs can carry the old
@@ -116,9 +122,10 @@ Treat the HA config-entry host mapping as authoritative for unit identity.
 - **c2f84c mic capture quality — RESOLVED as a channel issue** (updated
   2026-11-11): the earlier "suspect hardware / RMA" theory is superseded —
   the unit transcribes scripted phrases well on mic channel 1 (minimal
-  passing volume 0.40 in calibration) and channel 0 is near-deaf on both
-  units. Fixed by sampling ch1 for the voice assistant (divergence §4);
-  hardware reseat/RMA no longer indicated unless ch1 degrades too.
+  passing volume 0.40 in calibration) and channel 0 is near-dead on this
+  unit (c5a9ac's matrix is the opposite — see §4). Fixed by per-unit
+  channel sampling (divergence §4); hardware reseat/RMA no longer
+  indicated unless the good channel degrades too.
 - Transcripts of pure room noise occasionally hallucinate sentences
   containing "Jinx" and open conversations server-side; the gate's echo/dup
   suppression catches exact replays, but noise-hallucination filtering is a
@@ -126,6 +133,10 @@ Treat the HA config-entry host mapping as authoritative for unit identity.
 
 ## Change log
 
+- 2026-11-11 (2): Per-unit mic channel via `mic_channels` substitution —
+  c5a9ac (livingroom yaml) pinned to ch0 after its flashed-ch1 build heard
+  VAD but produced no intelligible transcription; c2f84c (kitchen yaml)
+  explicitly pinned to ch1. MWW microphone stays literal ch1 on both.
 - 2026-11-11: Voice assistant mic channel 0 → 1 (ch0 near-deaf on both
   units; calibration data in HomeAutomation nocommit/hearing). Mute checks
   hoisted above the conversation phase handlers in the LED dispatch (mute

@@ -5,6 +5,8 @@
 substitutions:
   friendly_name: "Kitchen Satellite1"
   node_name: satellite1-kitchen
+  # Explicit for the per-unit matrix (c2f84c): ch0 is near-dead on this unit.
+  mic_channels: "1"
 
 packages:
   satellite1: !include satellite1.yaml

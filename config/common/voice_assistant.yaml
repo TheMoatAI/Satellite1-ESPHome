@@ -46,7 +46,11 @@ micro_wake_word:
   vad:
   microphone:
     microphone: sat1_mics
-    channels: ${mic_channels}
+    # MWW stays on ch1 — the only channel with verified wake-word detection on
+    # both units (stock behavior, 2026-11-10 calibration). Wake words are
+    # dormant in the Farr attention-gate mode, but keep the tested config for
+    # when they re-enable.
+    channels: 1
     gain_factor: 6
   stop_after_detection: false
   on_wake_word_detected:
