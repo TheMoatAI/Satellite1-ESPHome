@@ -68,22 +68,30 @@ customizations.
   stops hearing people, check whisper's VAD/transcription output and the
   hearing-accuracy harness rather than trusting the ring.
 
-### 4. Voice assistant samples mic channel 1 (not stock channel 0)
+### 4. Voice assistant samples mic channel per unit (`mic_channels` substitution)
 
-- `voice_assistant.yaml` microphone block: `channels: 1`, matching the
-  micro_wake_word block (which has always used channel 1 and detected wake
-  words on both units). Stock FPH v0.2.1 ships VA on ch0 / MWW on ch1.
+- `voice_assistant.yaml` microphone blocks use `channels: ${mic_channels}`.
+  Default is `"1"` (set in `satellite1.yaml`); per-unit yamls override.
+  micro_wake_word has always used channel 1 and detects wake words on both
+  units. Stock FPH v0.2.1 ships VA on ch0 / MWW on ch1.
 - Rationale: side-by-side calibration (scripted phrases cross-played between
-  units, transcription scored via the gate's utterance buffer) found the
-  ch0 path near-deaf on **both** units — c2f84c's ch0 transcribed nothing at
-  any volume (even to a human yelling) while its ch1 passes scripted phrases
-  at volume 0.40; c5a9ac's ch0 needed volume 0.60 to pass. The clean
-  same-unit contrast: c2f84c ch0 = nothing, ch1 = 0.40.
+  units, transcription scored via the gate's utterance buffer) found the mic
+  channels are NOT equivalent and differ per unit:
+  - **c2f84c: ch0 near-dead, ch1 good** — ch0 transcribed nothing at any
+    volume (even to a human yelling); ch1 passes scripted phrases at 0.40.
+  - **c5a9ac: ch1 unusable, ch0 works** — ch0 passed capture at 0.60
+    (2026-11-10 runs); flashed ch1 on 2026-11-11 heard VAD-level noise but
+    whisper returned "No text recognized" on every pipeline cycle (visible
+    in encrypted device logs) — the channel hears sound but no intelligible
+    speech. `satellite1-livingroom.yaml` therefore pins `mic_channels: "0"`.
 - Calibration data: `HomeAutomation/nocommit/hearing/` (ladder + validation
   JSON per arm; run via `just voice-hearing-test`).
 - Reflash caveat: stale `config/.esphome/` build dirs can carry the old
-  `add_channel(0)` into a rebuilt image — clear `.esphome/` and verify the
-  generated `main.cpp` shows `add_channel(1)` before OTA.
+  channel into a rebuilt image — clear `.esphome/` and verify the generated
+  `main.cpp` shows `add_channel(<expected>)` before OTA. Also: esphome may
+  serve a *validated config cache* (`config/.esphome/storage/*.json`) and
+  skip re-reading edited yaml — delete `config/.esphome/storage/` after
+  config edits if a run logs "skipping validation".
 
 ## Units, configs, and identity mapping
 
@@ -95,7 +103,9 @@ Two per-room configs exist, keyed to WiFi (not to current physical room):
 | `config/satellite1-livingroom.yaml` | Hummingbird | `Satellite1 c5a9ac` | `192.168.86.207` | physically in kitchen (2026-11-10); HA entity prefix `kitchen_*` |
 
 Diffs between the two configs: WiFi credentials, `node_name`,
-`friendly_name`. Everything behavioral is shared via `config/common/`.
+`friendly_name`, and `mic_channels` (c2f84c=kitchen yaml→ch1,
+c5a9ac=livingroom yaml→ch0, see §4). Everything else is shared via
+`config/common/`.
 
 Entity-ID prefixes in HA are permanent from first enrollment and do not track
 physical location — the units have been swapped physically during bring-up.

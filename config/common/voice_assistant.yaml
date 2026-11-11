@@ -46,7 +46,7 @@ micro_wake_word:
   vad:
   microphone:
     microphone: sat1_mics
-    channels: 1
+    channels: ${mic_channels}
     gain_factor: 6
   stop_after_detection: false
   on_wake_word_detected:
@@ -97,7 +97,7 @@ voice_assistant:
   id: va
   microphone:
     microphone: sat1_mics
-    channels: 1
+    channels: ${mic_channels}
 
   media_player: external_media_player
   micro_wake_word: mww
