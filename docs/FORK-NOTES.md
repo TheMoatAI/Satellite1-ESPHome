@@ -133,6 +133,12 @@ Treat the HA config-entry host mapping as authoritative for unit identity.
 
 ## Change log
 
+- 2026-11-11 (3): NS-level experiment — `noise_suppression_level: 2` showed
+  no echo benefit (self-playback still transcribed at the 0.15 volume
+  floor on the side-by-side rig) and capture degraded (1/3 phrases vs the
+  2/3 baseline). Reverted to stock 0; the gate's playing-window rule owns
+  echo suppression. Note: the XMOS AEC is the real echo mechanism and is
+  not exposed over the SPI interface; ESP-level NS is not AEC.
 - 2026-11-11 (2): Per-unit mic channel via `mic_channels` substitution —
   c5a9ac (livingroom yaml) pinned to ch0 after its flashed-ch1 build heard
   VAD but produced no intelligible transcription; c2f84c (kitchen yaml)

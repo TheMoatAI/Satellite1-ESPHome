@@ -106,6 +106,10 @@ voice_assistant:
   media_player: external_media_player
   micro_wake_word: mww
   use_wake_word: false
+  # NS 2 tried 2026-11-11: no echo benefit (self-playback still transcribed
+  # at the volume floor) and capture degraded 1/3 vs the 2/3 baseline on the
+  # side-by-side rig. Reverted to stock 0; the gate's playing-window rule
+  # owns echo suppression.
   noise_suppression_level: 0
   auto_gain: 0 dbfs
   volume_multiplier: 1
