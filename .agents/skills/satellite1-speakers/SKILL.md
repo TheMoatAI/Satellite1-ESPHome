@@ -63,6 +63,24 @@ cd /Users/chrisfarr/code/Satellite1-ESPHome
 - After a flash, verify the `Free speech capture` switch state in HA — the
   switch restores from the device's flash prefs (`RESTORE_DEFAULT_OFF`), not
   from HA, so a fresh flash can drop it.
+- **One unit's capture degrades while the other is fine? Check per-unit
+  build parity first.** The per-room configs pin DIFFERENT mic channels
+  (c2f84c=ch1 via kitchen yaml, c5a9ac=ch0 via livingroom yaml — see
+  satellite1.yaml), and a stale per-unit build samples the wrong one.
+  Node-name trap: satellite1-livingroom.yaml shares node name
+  `satellite1`, so its build dir is `config/.esphome/build/satellite1/`
+  — not `satellite1-livingroom/` (`ls config/.esphome/build/` shows
+  `satellite1` and `satellite1-kitchen`). Check the binary timestamp,
+  not the dir name. 2026-11-14: c5a9ac transcribed nothing at 1ft (yet
+  heard its own loud playback — low-gain signature); the ch0-pinned
+  livingroom build existed in `config/.esphome/build/satellite1/` but
+  the unit was still running the pre-pin ch1 build — the shared node
+  name made the stale build look current. `esphome run
+  config/satellite1-livingroom.yaml --device 192.168.86.207` fixed it —
+  exact transcript at volume 0.60 post-flash. Validate with
+  `just voice-hearing-test` from the HomeAutomation repo on the Studio
+  (it runs `voice_router/scripts/hearing_calibration.py`) in the
+  direction that failed.
 - If an edit to an *included* file (`config/common/*`) isn't picked up, delete
   the `.esphome/` cache dir and rebuild — the validation cache can pin stale
   included config.
@@ -105,7 +123,9 @@ Device logs require the API encryption key that Home Assistant set at adoption:
 
 ### HA-side controls (no reflash needed)
 
-- Reboot a unit: press `button.satellite1_XXX_restart_sat1`.
+- Reboot a unit: press `button.satellite1_XXX_restart_sat1` (verified working
+  2026-11-14 on both units after a wedge: unavailable → idle in ~30-60s;
+  Red Twinkle during reconnect is benign, not an error).
 - Continuous capture: `switch.*_free_speech_capture` (on = always-listening).
 - Conversation lighting: `switch.*_conversation_light` (the voice-gate flips
   the kitchen unit's switch; see `homeai-voice-gate` env in HomeAutomation's
@@ -124,3 +144,24 @@ Device logs require the API encryption key that Home Assistant set at adoption:
   `docker-compose.yml`. Mic gain / noise suppression knobs live in
   `config/common/voice_assistant.yaml` here, but the household decision (2026-11-10)
   is to leave gain/suppression stock and treat noise-with-no-words as normal.
+
+## Voice-tier testing with the pair (speakers pointed at each other)
+
+The kitchen (`c5a9ac`, 192.168.86.207) and living-room (`c2f84c`, 192.168.86.206)
+units get physically aimed at each other for closed-loop audio tests: one unit
+plays TTS, the other's mic captures it. Driving entities over the HA REST API
+(token `HA_TOKEN`, HA on the Studio at 192.168.86.200:8123):
+
+- Play TTS on a unit: `POST /api/services/assist_satellite/announce`
+  `{"entity_id": "assist_satellite.<unit>_assist_satellite", "message": "...",
+  "preannounce": false}` — 200 on accept.
+- Both units run the fork's free-speech capture, so `assist_satellite.*`
+  state `listening` is the steady state, not a wedge. A wedged unit shows
+  `unavailable` on its `assist_satellite`/`media_player` entities; reboot via
+  the restart button.
+- Pipeline debug lines land in the `homeai-voice-router` container logs
+  (enable with the `logger/set_level` service, `assist_pipeline: debug`) —
+  `default_pipeline speech-to-text result ...` shows what the mic heard.
+- Keep-docs rule: when a speaker-test session learns a durable procedure or
+  gotcha, fold it back into this skill and `docs/FORK-NOTES.md` the same
+  session. See the `homeai-voice-stack` skill for the fork map.

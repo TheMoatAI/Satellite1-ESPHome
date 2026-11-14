@@ -133,6 +133,26 @@ Treat the HA config-entry host mapping as authoritative for unit identity.
 
 ## Change log
 
+- 2026-11-14: c5a9ac mic regression root-caused as BUILD DRIFT, not
+  hardware — the unit still ran the pre-`mic_channels` ch1 build (the
+  ch0-pinned livingroom build existed in `.esphome/build/satellite1/` but
+  had never been OTA'd; the livingroom yaml deliberately shares node name
+  `satellite1`, so its build dir is not `satellite1-livingroom`).
+  Reflashed satellite1-livingroom.yaml over OTA; the previously-deaf
+  direction (c2f84c talks → c5a9ac listens) now passes the hearing ladder
+  at volume 0.60 with an exact transcript (was: nothing transcribed at any
+  volume). Operational lesson added to the skill: check per-unit build
+  parity when one unit's capture degrades. Related server-side: whisper
+  VAD threshold lowered to 0.15 in HomeAutomation's docker-compose (at
+  stock mic gain, 0.3 VAD-trimmed ALL cross-unit speech to empty;
+  full test strategy in HomeAutomation voice_router/scripts/TESTING.md).
+
+- 2026-11-11 (3): NS-level experiment — `noise_suppression_level: 2` showed
+  no echo benefit (self-playback still transcribed at the 0.15 volume
+  floor on the side-by-side rig) and capture degraded (1/3 phrases vs the
+  2/3 baseline). Reverted to stock 0; the gate's playing-window rule owns
+  echo suppression. Note: the XMOS AEC is the real echo mechanism and is
+  not exposed over the SPI interface; ESP-level NS is not AEC.
 - 2026-11-11 (2): Per-unit mic channel via `mic_channels` substitution —
   c5a9ac (livingroom yaml) pinned to ch0 after its flashed-ch1 build heard
   VAD but produced no intelligible transcription; c2f84c (kitchen yaml)
