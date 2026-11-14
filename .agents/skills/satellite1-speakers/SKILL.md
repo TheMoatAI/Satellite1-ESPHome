@@ -67,12 +67,20 @@ cd /Users/chrisfarr/code/Satellite1-ESPHome
   build parity first.** The per-room configs pin DIFFERENT mic channels
   (c2f84c=ch1 via kitchen yaml, c5a9ac=ch0 via livingroom yaml — see
   satellite1.yaml), and a stale per-unit build samples the wrong one.
-  2026-11-14: c5a9ac transcribed nothing at 1ft (yet heard its own loud
-  playback — low-gain signature); the ch0-pinned livingroom build existed
-  in `.esphome/build/` but the unit was still running the pre-pin ch1
-  build. `esphome run config/satellite1-livingroom.yaml --device
-  192.168.86.207` fixed it — exact transcript at volume 0.60 post-flash.
-  Validate with hearing_calibration.py in the direction that failed.
+  Node-name trap: satellite1-livingroom.yaml shares node name
+  `satellite1`, so its build dir is `config/.esphome/build/satellite1/`
+  — not `satellite1-livingroom/` (`ls config/.esphome/build/` shows
+  `satellite1` and `satellite1-kitchen`). Check the binary timestamp,
+  not the dir name. 2026-11-14: c5a9ac transcribed nothing at 1ft (yet
+  heard its own loud playback — low-gain signature); the ch0-pinned
+  livingroom build existed in `config/.esphome/build/satellite1/` but
+  the unit was still running the pre-pin ch1 build — the shared node
+  name made the stale build look current. `esphome run
+  config/satellite1-livingroom.yaml --device 192.168.86.207` fixed it —
+  exact transcript at volume 0.60 post-flash. Validate with
+  `just voice-hearing-test` from the HomeAutomation repo on the Studio
+  (it runs `voice_router/scripts/hearing_calibration.py`) in the
+  direction that failed.
 - If an edit to an *included* file (`config/common/*`) isn't picked up, delete
   the `.esphome/` cache dir and rebuild — the validation cache can pin stale
   included config.
