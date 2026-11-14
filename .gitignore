@@ -24,3 +24,4 @@ sdkconfig.esp32-s3-idf
 /Docker/firmware_server/shared-folder
 
 **/.DS_Storeartifacts/
+artifacts/
