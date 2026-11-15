@@ -287,6 +287,15 @@ script:
                 data:
                   entity_id: ${sibling_capture_hold}
 
+  # Farr fork: watchdog for the capture hold — releases it if the announcing
+  # unit never does (reboot, crash, lost API). mode: restart re-arms on each
+  # new announcement.
+  - id: capture_hold_timeout
+    mode: restart
+    then:
+      - delay: 35s
+      - switch.turn_off: capture_hold
+
 select:
   - platform: template
     id: mww_sensitivity_select
@@ -358,7 +367,8 @@ switch:
   # Farr fork: capture hold. The sibling unit flips this on while IT is
   # announcing, so this unit stays deaf to the reply instead of transcribing
   # it cross-room. The announcing unit's resume keeper releases it at
-  # playback end + 400ms.
+  # playback end + 400ms. The timeout script bounds a stuck hold (announcing
+  # unit reboots/dies mid-playback) to 35s — the gate caps replies at 30s.
   - platform: template
     id: capture_hold
     name: "Capture hold"
@@ -368,5 +378,6 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
     turn_on_action:
       - voice_assistant.stop:
+      - script.execute: capture_hold_timeout
     turn_off_action:
       - script.execute: resume_capture_after_playback
