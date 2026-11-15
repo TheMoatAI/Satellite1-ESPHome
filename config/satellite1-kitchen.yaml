@@ -8,6 +8,9 @@ substitutions:
   # Explicit for the per-unit matrix (c2f84c): ch0 is near-dead on this unit.
   mic_channels: "1"
 
+  # Deafen c5a9ac while this unit announces.
+  sibling_capture_hold: switch.kitchen_satellite1_c5a9ac_capture_hold
+
 packages:
   satellite1: !include satellite1.yaml
 

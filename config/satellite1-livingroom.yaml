@@ -8,6 +8,9 @@ substitutions:
   # (whisper: "No text recognized") — its ch0 passes.
   mic_channels: "0"
 
+  # Deafen c2f84c while this unit announces.
+  sibling_capture_hold: switch.living_room_satellite1_c2f84c_capture_hold
+
 packages:
   satellite1: !include satellite1.yaml
 
