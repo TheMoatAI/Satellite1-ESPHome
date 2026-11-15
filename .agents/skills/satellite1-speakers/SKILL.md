@@ -83,9 +83,42 @@ cd /Users/chrisfarr/code/Satellite1-ESPHome
   direction that failed.
 - If an edit to an *included* file (`config/common/*`) isn't picked up, delete
   the `.esphome/` cache dir and rebuild — the validation cache can pin stale
-  included config.
+  included config. **Cost of that deletion (2026-11-14): a FULL ESP-IDF
+  rebuild (~15 min, 2100+ units), and the wake-word models re-download from
+  S3 — which can fail with `Connection reset by peer` and kill the
+  process.** If S3 resets, pre-seed the cache yourself:
+  `config/.esphome/micro_wake_word/<sha256(url)[:8]>/manifest.json` + the
+  model file named in the manifest (curl reaches S3 fine even when the
+  esphome client doesn't; key = sha256 of the model URL, first 8 hex chars).
 - WiFi model-manifest checks may warn `Connection reset by peer` and use cached
   wake-word files — harmless.
+
+## Announce-path traps (2026-11-14, hard-won)
+
+- **NEVER call `voice_assistant.stop` from media_player `on_announcement`.**
+  In the assist-satellite announce flow the VA itself streams the TTS
+  response into the announcement (VA `STREAMING_RESPONSE` → speaker_source
+  `ANNOUNCING`); stopping the VA aborts playback in ~20ms — ANNOUNCING →
+  IDLE, decode never runs, **no audio** (verified in device logs). This was
+  the intermittent "announce wedges silently" failure. Echo suppression for
+  the announcing unit stays on the gate's playing-window rule instead.
+- **HA sees NO state change during announcements** — the device publishes
+  `MEDIA_PLAYER_STATE_ANNOUNCING` (4) but HA's esphome media_player mapper
+  has no ANNOUNCING entry, so the entity stays `idle` and an HA automation
+  keyed on media_player state cannot detect replies. Key cross-unit logic
+  on the device (`homeassistant.service` calls) or the gate instead.
+- Cross-unit echo suppression: the announcing unit flips the sibling's
+  `capture_hold` switch via `homeassistant.service` in `on_announcement`;
+  its `on_state` keeper (`resume_capture_after_playback` in
+  voice_assistant.yaml) reopens capture 400ms after playback ends and
+  releases the sibling. Sibling entity ids live in the per-room yamls as
+  `sibling_capture_hold`.
+- New fork switches register with room-prefixed entity ids — but HA may
+  merge device name + area oddly (c2f84c's capture_hold first registered as
+  `switch.living_room_kitchen_satellite1_c2f84c_capture_hold`). Verify the
+  actual id after first registration and rename in the HA entity registry
+  (`config/entity_registry/update` with `new_entity_id`) rather than
+  reflashing.
 
 ## Device status and diagnostics
 
