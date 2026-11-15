@@ -10,6 +10,10 @@ substitutions:
   # per-unit yaml; default ch1.
   mic_channels: "1"
 
+  # The switch this unit deafens while IT announces (the sibling's capture
+  # hold). Override per-unit yaml; default is c5a9ac's hold.
+  sibling_capture_hold: switch.kitchen_satellite1_c5a9ac_capture_hold
+
 packages:
   # This is an inline package to prefix the on_client_connected with the wait_until action
   # It must appear before the actual package so it becomes the original config and the

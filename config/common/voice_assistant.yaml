@@ -112,7 +112,15 @@ voice_assistant:
   # owns echo suppression.
   noise_suppression_level: 0
   auto_gain: 0 dbfs
-  volume_multiplier: 1
+  # 2026-11-14: at stock 1x, HA's VAD never saw speech (start threshold 0.2):
+  # 1601 "VAD end of speech detection timed out after 15.0 seconds" in 6h —
+  # every turn waited out the full 15s window before STT (latency, utterance
+  # fragmentation, late echo flushes). The multiplier is applied server-side
+  # BEFORE the VAD (assist_pipeline process_enhance_audio: audioop.mul then
+  # enhance_chunk), so 4x (+12dB) feeds it the level it needs. STT quality
+  # re-laddered after flash; escalate to 6 (MWW's proven gain) if VAD still
+  # misses, drop to 2 per-unit if loud speech clips.
+  volume_multiplier: 4
   on_client_connected:
     - lambda: id(init_in_progress) = false;
     # Farr fork: default to stock wake-word mode; the free_speech_capture
@@ -254,6 +262,31 @@ script:
                 then:
                   - micro_wake_word.disable_model: stop
 
+  # Farr fork: reopen free-speech capture after an announcement. The
+  # media_player on_announcement hook stops the VA (a reply's own playback
+  # must not be transcribed, and its in-flight window would hold the echo
+  # until the 15s VAD timeout); this reopens capture once the room settles
+  # and releases the sibling unit's capture hold so the pair resumes.
+  - id: resume_capture_after_playback
+    mode: restart
+    then:
+      - delay: 400ms
+      - if:
+          condition:
+            and:
+              - switch.is_on: free_speech_capture
+              - switch.is_off: capture_hold
+              - not:
+                  voice_assistant.is_running:
+              - not:
+                  media_player.is_announcing: external_media_player
+          then:
+            - voice_assistant.start_continuous
+            - homeassistant.service:
+                service: switch.turn_off
+                data:
+                  entity_id: ${sibling_capture_hold}
+
 select:
   - platform: template
     id: mww_sensitivity_select
@@ -321,3 +354,19 @@ switch:
           blue: 100%
     turn_off_action:
       - light.turn_off: voice_assistant_leds
+
+  # Farr fork: capture hold. The sibling unit flips this on while IT is
+  # announcing, so this unit stays deaf to the reply instead of transcribing
+  # it cross-room. The announcing unit's resume keeper releases it at
+  # playback end + 400ms.
+  - platform: template
+    id: capture_hold
+    name: "Capture hold"
+    icon: mdi:microphone-off
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - voice_assistant.stop:
+    turn_off_action:
+      - script.execute: resume_capture_after_playback

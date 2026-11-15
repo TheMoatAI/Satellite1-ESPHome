@@ -147,6 +147,31 @@ Treat the HA config-entry host mapping as authoritative for unit identity.
   stock mic gain, 0.3 VAD-trimmed ALL cross-unit speech to empty;
   full test strategy in HomeAutomation voice_router/scripts/TESTING.md).
 
+- 2026-11-14 (2): Far-field VAD fix + cross-unit echo hold. (a)
+  `volume_multiplier: 1 → 4` in voice_assistant.yaml — at stock 1x, HA's
+  microVAD never saw speech (start threshold 0.2): 1601 "VAD end of speech
+  detection timed out after 15.0 seconds" in 6h on the router, so every
+  turn waited out the full 15s window (latency, utterance fragmentation,
+  late echo flushes). The multiplier is applied server-side BEFORE the VAD
+  (assist_pipeline process_enhance_audio: audioop.mul → enhance_chunk), so
+  4x (+12dB) feeds it. Live-verified: turns now arrive every ~5s, room-
+  distance TV speech transcribes clean. (b) Cross-unit echo hold: a new
+  `capture_hold` template switch per unit; the ANNOUNCING unit flips the
+  sibling's hold ON via `homeassistant.service` in media_player
+  `on_announcement`, and its on_state keeper (`resume_capture_after_playback`)
+  reopens its own capture 400ms after playback ends and releases the
+  sibling. Sibling entity ids are the `sibling_capture_hold` substitution
+  in the per-room yamls. HA renames: c2f84c's hold registered as
+  `switch.living_room_kitchen_...` (device name + area merge) — renamed in
+  the HA entity registry to `switch.living_room_satellite1_c2f84c_capture_hold`
+  to match the firmware. (c) **Critical lesson: do NOT call
+  `voice_assistant.stop` from media_player `on_announcement`** — in the
+  assist-satellite announce flow the VA itself streams the TTS response
+  into the announcement; stopping it aborted playback in ~20ms
+  (ANNOUNCING → IDLE, no audio — this was the "announce wedges silently"
+  failure). Tried 2026-11-14, reverted same day; the announcing unit's
+  self-echo stays on the gate's playing-window rule.
+
 - 2026-11-11 (3): NS-level experiment — `noise_suppression_level: 2` showed
   no echo benefit (self-playback still transcribed at the 0.15 volume
   floor on the side-by-side rig) and capture degraded (1/3 phrases vs the

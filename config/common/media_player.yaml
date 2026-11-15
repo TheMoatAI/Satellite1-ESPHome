@@ -80,8 +80,18 @@ media_player:
       - script.execute: control_leds
     on_volume:
       - script.execute: control_leds
-    # Apply audio ducking when an announcement starts
+    # Farr fork (2026-11-14): announcements are almost always Jinx's reply.
+    # Deafen the sibling while we speak (it flips its capture_hold off at our
+    # playback end via resume_capture_after_playback). NOTE: do NOT call
+    # voice_assistant.stop here — in the assist-satellite announce flow the VA
+    # itself streams the TTS response into the announcement; stopping it
+    # aborted playback in ~20ms (ANNOUNCING -> IDLE, no audio heard). The
+    # announcing unit's self-echo stays on the gate's playing-window rule.
     on_announcement:
+      - homeassistant.service:
+          service: switch.turn_on
+          data:
+            entity_id: ${sibling_capture_hold}
       - mixer_speaker.apply_ducking:
           id: media_mixing_input
           decibel_reduction: 20
@@ -102,6 +112,17 @@ media_player:
                 id: media_mixing_input
                 decibel_reduction: 0
                 duration: 1.0s
+      # Farr fork: reopen free-speech capture after an announcement ends
+      # (also releases the sibling's hold). Guards live in the script.
+      - if:
+          condition:
+            and:
+              - not:
+                  media_player.is_announcing: external_media_player
+              - not:
+                  voice_assistant.is_running:
+          then:
+            - script.execute: resume_capture_after_playback
 
 script:
   # Script executed when we want to play sounds on the device.
